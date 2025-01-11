@@ -10,13 +10,14 @@ class Player(CircleShape, pygame.sprite.Sprite):
         size = int(PLAYER_RADIUS * 3)
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
         self.rect = self.image.get_rect()
-        self.draw()
+        self.rect.center = self.position
 
-    def draw(self):
+    def draw(self, screen):
         self.image.fill((0, 0, 0, 0))
         local_points = self.get_local_triangle()
         pygame.draw.polygon(self.image, "white", local_points, 2)
         self.rect.center = self.position
+        screen.blit(self.image, self.rect)
 
     def get_local_triangle(self):
         center = pygame.Vector2(self.image.get_width() / 2, self.image.get_height() / 2)
@@ -33,26 +34,18 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
     def update(self, dt):
         keys = pygame.key.get_pressed()
-        needs_redraw = False
 
-        if keys[pygame.K_w]:
+        if keys[pygame.K_w]:  # Move forward
             self.move(dt)
-            needs_redraw = True
 
-        if keys[pygame.K_a]:
+        if keys[pygame.K_a]:  # Rotate counterclockwise
             self.rotate(dt * -1)
-            needs_redraw = True
 
-        if keys[pygame.K_s]:
-            self.move(dt *-1)
-            needs_redraw = True
+        if keys[pygame.K_s]:  # Move backward
+            self.move(dt * -1)
 
-        if keys[pygame.K_d]:
+        if keys[pygame.K_d]:  # Rotate clockwise
             self.rotate(dt)
-            needs_redraw = True
-
-        if needs_redraw:
-            self.draw()
 
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
