@@ -12,6 +12,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
         self.rect = self.image.get_rect()
         self.rect.center = self.position
+        self.timer = 0
 
     def draw(self, screen):
         self.image.fill((0, 0, 0, 0))
@@ -34,8 +35,10 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.rotation += PLAYER_TURN_SPEED * dt
 
     def update(self, dt):
+        if self.timer > 0:
+            self.timer -= dt
+            
         keys = pygame.key.get_pressed()
-
         if keys[pygame.K_w]:  # Move forward
             self.move(dt)
 
@@ -58,5 +61,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
     def shoot(self):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        forward *= PLAYER_SHOOT_SPEED
-        shot = Shot(self.position.x, self.position.y, forward)
+        forward *= PLAYER_SHOOT_SPEED        
+        if self.timer <= 0:            
+            shot = Shot(self.position.x, self.position.y, forward)
+            self.timer = PLAYER_SHOOT_COOLDOWN
