@@ -1,6 +1,7 @@
 import pygame
 from circleshape import CircleShape
 from constants import *
+from asteroid import Shot
 
 class Player(CircleShape, pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -47,7 +48,15 @@ class Player(CircleShape, pygame.sprite.Sprite):
         if keys[pygame.K_d]:  # Rotate clockwise
             self.rotate(dt)
 
+        if keys[pygame.K_SPACE]:
+            self.shoot()
+
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
         self.position += forward * PLAYER_SPEED * dt
         self.rect.center = self.position
+
+    def shoot(self):
+        forward = pygame.Vector2(0, 1).rotate(self.rotation)
+        forward *= PLAYER_SHOOT_SPEED
+        shot = Shot(self.position.x, self.position.y, forward)

@@ -18,3 +18,17 @@ class Asteroid(CircleShape, pygame.sprite.Sprite):
 
     def update(self, dt):
         self.position += self.velocity * dt  # Move asteroid by its velocity
+
+class Shot(CircleShape, pygame.sprite.Sprite):
+    def __init__(self, x, y, velocity):
+        CircleShape.__init__(self, x, y, 5)
+        pygame.sprite.Sprite.__init__(self, self.containers)
+        self.velocity = velocity
+
+    def draw(self, screen):
+        pygame.draw.circle(
+            screen, "white", (int(self.position.x), int(self.position.y)), self.radius, 2
+        )
+
+    def update(self, dt):
+        self.position += self.velocity * dt
