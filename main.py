@@ -5,6 +5,21 @@ from player import *
 from asteroid import *
 from asteroidfield import AsteroidField
 
+# Add later:
+
+    # Add a scoring system
+    # Implement multiple lives and respawning
+    # Add an explosion effect for the asteroids
+    # Add acceleration to the player movement
+    # Make the objects wrap around the screen instead of disappearing
+    # Add a background image
+    # Create different weapon types
+    # Make the asteroids lumpy instead of perfectly round
+    # Make the ship have a triangular hit box instead of a circular one
+    # Add a shield power-up
+    # Add a speed power-up
+    # Add bombs that can be dropped
+
 def main():
     print("Starting asteroids!")
     print(f"Screen width: {SCREEN_WIDTH}")
@@ -14,15 +29,19 @@ def main():
     all_sprites = pygame.sprite.Group()
     clock = pygame.time.Clock()
     dt = 0
+
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+
     Shot.containers = (shots, updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
     AsteroidField.containers = (updatable,)
-    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     asteroid_field = AsteroidField()
+
+    player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+    
     updatable.add(asteroid_field)
     all_sprites.add(player)
     updatable.add(player)
@@ -37,6 +56,12 @@ def main():
             if asteroid.collisions(player):
                 print("Game over!")
                 sys.exit()
+
+            for shot in shots:
+                if shot.collisions(asteroid):
+                    shot.kill()
+                    asteroid.split()
+                    
         screen.fill((0, 0, 0))
         for sprite in drawable:
             sprite.draw(screen)
