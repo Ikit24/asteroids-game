@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 from constants import *
 from player import *
 from asteroid import *
@@ -12,7 +13,6 @@ from asteroidfield import AsteroidField
     # Add an explosion effect for the asteroids
     # Add acceleration to the player movement
     # Make the objects wrap around the screen instead of disappearing
-    # Add a background image
     # Create different weapon types
     # Make the asteroids lumpy instead of perfectly round
     # Make the ship have a triangular hit box instead of a circular one
@@ -29,6 +29,13 @@ def main():
     all_sprites = pygame.sprite.Group()
     clock = pygame.time.Clock()
     dt = 0
+    try:
+        image = pygame.image.load(os.path.join('images', 'ASTEROID.webp'))
+        image = pygame.transform.scale(image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    except pygame.error as e:
+        print(f"Couldn't load background image: {e}")
+        image = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        image.fill((0, 0, 0))  # Black color
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -61,8 +68,8 @@ def main():
                 if shot.collisions(asteroid):
                     shot.kill()
                     asteroid.split()
-                    
-        screen.fill((0, 0, 0))
+                         
+        screen.blit(image, (0, 0))
         for sprite in drawable:
             sprite.draw(screen)
         pygame.display.flip()
