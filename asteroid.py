@@ -11,6 +11,16 @@ class Asteroid(CircleShape, pygame.sprite.Sprite):
         # Initialize pygame sprite for sprite group functionalities
         pygame.sprite.Sprite.__init__(self, self.containers)
 
+        self.size = self._determine_size()
+
+    def _determine_size(self):
+        if self.radius >= ASTEROID_MAX_RADIUS:
+            return ASTEROID_SIZE_LARGE
+        elif self.radius >= ASTEROID_MAX_RADIUS - ASTEROID_MIN_RADIUS:
+            return ASTEROID_SIZE_MEDIUM
+        else:
+            return ASTEROID_SIZE_SMALL
+
     def draw(self, screen):
         # Use self.position.x and self.position.y instead of self.x and self.y
         pygame.draw.circle(
@@ -21,6 +31,7 @@ class Asteroid(CircleShape, pygame.sprite.Sprite):
         self.position += self.velocity * dt  # Move asteroid by its velocity
 
     def split(self):
+        
         self.kill()
 
         if self.radius <= ASTEROID_MIN_RADIUS:
