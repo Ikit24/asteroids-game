@@ -18,7 +18,6 @@ from asteroidfield import AsteroidField
     # Add acceleration to the player movement
     # Make the objects wrap around the screen instead of disappearing
     # Create different weapon types
-    # Make the asteroids lumpy instead of perfectly round
     # Add a shield power-up
     # Add a speed power-up
     # Add bombs that can be dropped

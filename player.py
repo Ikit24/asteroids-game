@@ -4,6 +4,14 @@ from constants import *
 from asteroid import Shot
 
 class Player(CircleShape, pygame.sprite.Sprite):
+    images = {SPACESHIP: None}
+
+    @classmethod
+    def load_images(cls):
+        if cls.images[SPACESHIP] is None:
+             original = cls.images[SPACESHIP] = pygame.image.load("images/SPACESHIP.png").convert_alpha()
+             cls.images[SPACESHIP] = pygame.transform.rotate(original, PLAYER_INITIAL_ROTATION)
+        
     def __init__(self, x, y):
         CircleShape.__init__(self, x, y, PLAYER_RADIUS)
         pygame.sprite.Sprite.__init__(self)
@@ -12,13 +20,21 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
         self.rect = self.image.get_rect()
         self.rect.center = self.position
+
+        self.load_images()
+        
+        scaled_size = (PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)  # Width and height both 2x radius
+        self.original_image = pygame.transform.scale(self.images[SPACESHIP], scaled_size)
+        self.image = self.original_image.copy()
+        self.rect = self.image.get_rect()
+        self.rect.center = self.position
+        
         self.timer = 0
 
-    def draw(self, screen):
-        self.image.fill((0, 0, 0, 0))
-        local_points = self.get_local_triangle()
-        pygame.draw.polygon(self.image, "white", local_points, 2    )
-        self.rect.center = self.position
+    def draw(self, screen):      
+        self.rect.center = (int(self.position.x), int(self.position.y))
+        self.image = pygame.transform.rotate(self.original_image, -self.rotation)
+        self.rect = self.image.get_rect(center=self.rect.center)
         screen.blit(self.image, self.rect)
 
     def get_local_triangle(self):
@@ -60,10 +76,10 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.rect.center = self.position
 
     def shoot(self):
-        forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        forward *= PLAYER_SHOOT_SPEED        
-        if self.timer <= 0:            
-            shot = Shot(self.position.x, self.position.y, forward)
+        if self.timer <= 0:
+            forward = pygame.Vector2(0, 1).rotate(self.rotation)
+            forward *= PLAYER_SHOOT_SPEED        
+            Shot(self.position.x, self.position.y, forward)
             self.timer = PLAYER_SHOOT_COOLDOWN
 
     def get_world_vertices(self):
@@ -91,39 +107,39 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
         return not (has_neg and has_pos)
 
-def collisions(self, other):
-    if hasattr(other, 'radius'):  # For circular objects like asteroids
-        # Get triangle vertices in world coordinates
-        vertices = self.get_world_vertices()
-        
-        # Check if any vertex of the triangle is within the circle
-        circle_center = pygame.math.Vector2(other.position.x, other.position.y)
-        
-        # Check if any vertex is inside the circle
-        for vertex in vertices:
-            vertex_vec = pygame.math.Vector2(vertex)
-            if vertex_vec.distance_to(circle_center) <= other.radius:
-                return True
-        
-        # Check if circle center is inside triangle
-        if self.point_in_triangle((circle_center.x, circle_center.y), vertices):
-            return True
+    def collisions(self, other):
+        if hasattr(other, 'radius'):  # For circular objects like asteroids
+            # Get triangle vertices in world coordinates
+            vertices = self.get_world_vertices()
             
-        # Check if circle intersects with any of the triangle's edges
-        for i in range(3):
-            p1 = pygame.math.Vector2(vertices[i])
-            p2 = pygame.math.Vector2(vertices[(i + 1) % 3])
+            # Check if any vertex of the triangle is within the circle
+            circle_center = pygame.math.Vector2(other.position.x, other.position.y)
             
-            # Find nearest point on line segment to circle center
-            line_vec = p2 - p1
-            line_length = line_vec.length()
-            if line_length == 0:
-                continue
-                
-            t = max(0, min(1, (circle_center - p1).dot(line_vec) / line_vec.dot(line_vec)))
-            nearest = p1 + t * line_vec
+            # Check if any vertex is inside the circle
+            for vertex in vertices:
+                vertex_vec = pygame.math.Vector2(vertex)
+                if vertex_vec.distance_to(circle_center) <= other.radius:
+                    return True
             
-            if nearest.distance_to(circle_center) <= other.radius:
+            # Check if circle center is inside triangle
+            if self.point_in_triangle((circle_center.x, circle_center.y), vertices):
                 return True
                 
-    return False
+            # Check if circle intersects with any of the triangle's edges
+            for i in range(3):
+                p1 = pygame.math.Vector2(vertices[i])
+                p2 = pygame.math.Vector2(vertices[(i + 1) % 3])
+                
+                # Find nearest point on line segment to circle center
+                line_vec = p2 - p1
+                line_length = line_vec.length()
+                if line_length == 0:
+                    continue
+                    
+                t = max(0, min(1, (circle_center - p1).dot(line_vec) / line_vec.dot(line_vec)))
+                nearest = p1 + t * line_vec
+                
+                if nearest.distance_to(circle_center) <= other.radius:
+                    return True
+                    
+        return False
