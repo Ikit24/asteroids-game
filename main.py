@@ -28,10 +28,13 @@ def increase_multiplier(current_multiplier):
 def decrease_multiplier(current_multiplier):
     return max(INITIAL_MULTIPLIER, current_multiplier - MULTIPLIER_DECREASE)
 
+
+
 def main():
     print("Starting asteroids!")
     print(f"Screen width: {SCREEN_WIDTH}")
     print(f"Screen height: {SCREEN_HEIGHT}")
+    lives = 3
     score = INITIAL_SCORE
     high_score = INITIAL_SCORE
     multiplier = INITIAL_MULTIPLIER
@@ -43,7 +46,7 @@ def main():
     dt = 0
 
     try:
-        image = pygame.image.load(os.path.join('images', 'ASTEROID.webp'))
+        image = pygame.image.load(os.path.join('images', 'ASTEROID.png'))
         image = pygame.transform.scale(image, (SCREEN_WIDTH, SCREEN_HEIGHT))
     except pygame.error as e:
         print(f"Couldn't load background image: {e}")
@@ -71,6 +74,14 @@ def main():
     pygame.font.init()
     font = pygame.font.Font(None, 36)
 
+
+    def respawn_player():
+        new_player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        all_sprites.add(new_player)
+        updatable.add(new_player)
+        drawable.add(new_player)
+        return new_player
+
     while True:       
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -81,9 +92,16 @@ def main():
 
         for asteroid in asteroids:
             if asteroid.collisions(player):
-                print("Game over!")
-                multiplier = INITIAL_MULTIPLIER
-                sys.exit()
+                lives -= 1
+                if lives > 0:
+                    player.kill()
+                    player = respawn_player()
+                    multiplier = INITIAL_MULTIPLIER  
+
+                else:
+                    print("Game over!")
+                    sys.exit()
+                break                 
 
             for shot in shots:
                 if shot.collisions(asteroid):
@@ -100,11 +118,13 @@ def main():
                     shot.position.y < 0 or shot.position.y > SCREEN_HEIGHT):
                     shot.kill()
                     multiplier = decrease_multiplier(multiplier)
-                         
+            
         screen.blit(image, (0, 0))
         score_text = font.render(f'Score: {score}', True, (255, 255, 255))
         high_score_text = font.render(f'High Score: {high_score}', True, (255, 255, 255))
         multiplier_text = font.render(f'Multiplier: x{multiplier}', True, (255, 255, 255))
+        lives_text = font.render(f'Lives: {lives}', True, (255, 255, 255))
+        screen.blit(lives_text, (10, 130))
 
         screen.blit(score_text, (10, 10))
         screen.blit(high_score_text, (10, 50))
