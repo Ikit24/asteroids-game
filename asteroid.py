@@ -2,6 +2,7 @@ import pygame
 import random
 from circleshape import CircleShape
 from constants import *
+from utils import wrap_position
 
 class Asteroid(CircleShape, pygame.sprite.Sprite):
     images = {
@@ -51,6 +52,7 @@ class Asteroid(CircleShape, pygame.sprite.Sprite):
         super().update(dt)
         self.angle = (self.angle + 1) % 360
         self.position += self.velocity * dt
+        self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
 
     def split(self):        
         self.kill()

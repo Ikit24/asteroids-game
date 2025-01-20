@@ -9,14 +9,13 @@ from constants import (
 from player import *
 from asteroid import *
 from asteroidfield import AsteroidField
+from utils import wrap_position
 
 
 # Add later:
 
-    # Implement multiple lives and respawning
     # Add an explosion effect for the asteroids
     # Add acceleration to the player movement
-    # Make the objects wrap around the screen instead of disappearing
     # Create different weapon types
     # Add a shield power-up
     # Add a speed power-up
@@ -27,8 +26,6 @@ def increase_multiplier(current_multiplier):
 
 def decrease_multiplier(current_multiplier):
     return max(INITIAL_MULTIPLIER, current_multiplier - MULTIPLIER_DECREASE)
-
-
 
 def main():
     print("Starting asteroids!")

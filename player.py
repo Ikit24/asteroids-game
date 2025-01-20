@@ -2,6 +2,7 @@ import pygame
 from circleshape import CircleShape
 from constants import *
 from asteroid import Shot
+from utils import wrap_position
 
 class Player(CircleShape, pygame.sprite.Sprite):
     images = {SPACESHIP: None}
@@ -69,6 +70,8 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
         if keys[pygame.K_SPACE]:
             self.shoot()
+        
+        self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
 
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
