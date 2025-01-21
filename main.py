@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from explosion import Explosion
 from constants import (
     SCREEN_WIDTH, SCREEN_HEIGHT, 
     SCORE_VALUES, INITIAL_SCORE, 
@@ -40,6 +41,7 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     all_sprites = pygame.sprite.Group()
     clock = pygame.time.Clock()
+    explosions = pygame.sprite.Group()
     dt = 0
 
     try:
@@ -88,7 +90,7 @@ def main():
         hit_occured = False
 
         for asteroid in asteroids:
-            if asteroid.collisions(player):
+            if isinstance(asteroid, Asteroid) and asteroid.collisions(player):
                 lives -= 1
                 if lives > 0:
                     player.kill()
@@ -101,9 +103,14 @@ def main():
                 break                 
 
             for shot in shots:
-                if shot.collisions(asteroid):
+                if isinstance(asteroid, Asteroid) and shot.collisions(asteroid):
                     shot.kill()
                     hit_occured = True
+                    explosion = Explosion(asteroid.position.x, asteroid.position.y)
+                    explosions.add(explosion)
+                    updatable.add(explosion)
+                    drawable.add(explosion)
+
                     multiplier = increase_multiplier(multiplier)
                     points = SCORE_VALUES.get(asteroid.size, DEFAULT_POINTS)
                     score += int(points * multiplier)

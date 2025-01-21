@@ -3,6 +3,7 @@ import random
 from circleshape import CircleShape
 from constants import *
 from utils import wrap_position
+from explosion import Explosion
 
 class Asteroid(CircleShape, pygame.sprite.Sprite):
     images = {
@@ -54,7 +55,13 @@ class Asteroid(CircleShape, pygame.sprite.Sprite):
         self.position += self.velocity * dt
         self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
 
-    def split(self):        
+    def split(self): 
+        explosion = Explosion(self.position.x, self.position.y)
+        if hasattr(self, 'containers') and self.containers:
+            for container in self.containers:
+                if hasattr(container, 'add'):
+                    container.add(explosion)   
+
         self.kill()
 
         if self.radius <= ASTEROID_MIN_RADIUS:

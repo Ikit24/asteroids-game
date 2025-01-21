@@ -24,7 +24,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
         self.load_images()
         
-        scaled_size = (PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)  # Width and height both 2x radius
+        scaled_size = (PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)
         self.original_image = pygame.transform.scale(self.images[SPACESHIP], scaled_size)
         self.image = self.original_image.copy()
         self.rect = self.image.get_rect()
@@ -56,16 +56,16 @@ class Player(CircleShape, pygame.sprite.Sprite):
             self.timer -= dt
             
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:  # Move forward
+        if keys[pygame.K_w]:
             self.move(dt)
 
-        if keys[pygame.K_a]:  # Rotate counterclockwise
+        if keys[pygame.K_a]:
             self.rotate(dt * -1)
 
-        if keys[pygame.K_s]:  # Move backward
+        if keys[pygame.K_s]:
             self.move(dt * -1)
 
-        if keys[pygame.K_d]:  # Rotate clockwise
+        if keys[pygame.K_d]:
             self.rotate(dt)
 
         if keys[pygame.K_SPACE]:
@@ -111,24 +111,19 @@ class Player(CircleShape, pygame.sprite.Sprite):
         return not (has_neg and has_pos)
 
     def collisions(self, other):
-        if hasattr(other, 'radius'):  # For circular objects like asteroids
-            # Get triangle vertices in world coordinates
+        if hasattr(other, 'radius'):
             vertices = self.get_world_vertices()
             
-            # Check if any vertex of the triangle is within the circle
             circle_center = pygame.math.Vector2(other.position.x, other.position.y)
             
-            # Check if any vertex is inside the circle
             for vertex in vertices:
                 vertex_vec = pygame.math.Vector2(vertex)
                 if vertex_vec.distance_to(circle_center) <= other.radius:
                     return True
-            
-            # Check if circle center is inside triangle
+                        
             if self.point_in_triangle((circle_center.x, circle_center.y), vertices):
                 return True
-                
-            # Check if circle intersects with any of the triangle's edges
+            
             for i in range(3):
                 p1 = pygame.math.Vector2(vertices[i])
                 p2 = pygame.math.Vector2(vertices[(i + 1) % 3])
