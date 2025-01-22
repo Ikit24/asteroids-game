@@ -24,7 +24,7 @@ class Explosion(pygame.sprite.Sprite):
     def update(self, dt):
         self.timer += dt
         if self.timer >=self.animation_speed:                     
-            self.frame +=1
+            self.frame += 1
             self.timer = 0
             if self.frame >= len(self.images):
                 self.kill()

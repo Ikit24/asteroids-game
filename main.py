@@ -10,17 +10,21 @@ from constants import (
 from player import *
 from asteroid import *
 from asteroidfield import AsteroidField
-from utils import wrap_position
+from shieldpowerup import Shield_Power_up
 
 
 # Add later:
 
-    # Add an explosion effect for the asteroids
     # Add acceleration to the player movement
     # Create different weapon types
     # Add a shield power-up
     # Add a speed power-up
     # Add bombs that can be dropped
+
+def spawn_shield_powerup():
+    x = random.randrange(SCREEN_WIDTH)
+    y = random.randrange(SCREEN_HEIGHT)
+    return Shield_Power_up(x, y)
 
 def increase_multiplier(current_multiplier):
     return min(current_multiplier + MULTIPLIER_INCREASE, MAX_MULTIPLIER)
@@ -57,18 +61,24 @@ def main():
     asteroids = pygame.sprite.Group()
     shots = pygame.sprite.Group()
 
+    shield_powerups = pygame.sprite.Group()
+    Shield_Power_up.containers = shield_powerups
+
     Shot.containers = (shots, updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
     AsteroidField.containers = (updatable,)
     asteroid_field = AsteroidField()
 
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+    player.shield_active = True
+    player.shield_timer = pygame.time.get_ticks()
 
     
     updatable.add(asteroid_field)
     all_sprites.add(player)
     updatable.add(player)
     drawable.add(player)
+    shield_powerups.update(dt)
 
     pygame.font.init()
     font = pygame.font.Font(None, 36)
@@ -76,6 +86,8 @@ def main():
 
     def respawn_player():
         new_player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
+        new_player.shield_active = True
+        new_player.shield_timer = pygame.time.get_ticks()
         all_sprites.add(new_player)
         updatable.add(new_player)
         drawable.add(new_player)
@@ -91,16 +103,18 @@ def main():
 
         for asteroid in asteroids:
             if isinstance(asteroid, Asteroid) and asteroid.collisions(player):
-                lives -= 1
-                if lives > 0:
-                    player.kill()
-                    player = respawn_player()
-                    multiplier = INITIAL_MULTIPLIER  
-
+                if player.shield_active:
+                    player.shield_active = False
                 else:
-                    print("Game over!")
-                    sys.exit()
-                break                 
+                    lives -= 1
+                    if lives > 0:
+                        player.kill()
+                        player = respawn_player()
+                        multiplier = INITIAL_MULTIPLIER
+                    else:
+                        print("Gameover!")
+                        sys.exit()
+                break
 
             for shot in shots:
                 if isinstance(asteroid, Asteroid) and shot.collisions(asteroid):
@@ -122,7 +136,23 @@ def main():
                     shot.position.y < 0 or shot.position.y > SCREEN_HEIGHT):
                     shot.kill()
                     multiplier = decrease_multiplier(multiplier)
-            
+        if pygame.time.get_ticks() % 30000 < 50:
+            new_powerup = spawn_shield_powerup()
+            shield_powerups.add(new_powerup)
+            drawable.add(new_powerup)
+            updatable.add(new_powerup)
+
+        shield_powerups.update(dt)
+
+        for powerup in shield_powerups:
+            powerup.draw(screen)
+
+        for powerup in shield_powerups:
+            if powerup.collisions(player):
+                player.shield_active = True
+                player.shield_timer = pygame.time.get_ticks()
+                powerup.kill()
+
         screen.blit(image, (0, 0))
         score_text = font.render(f'Score: {score}', True, (255, 255, 255))
         high_score_text = font.render(f'High Score: {high_score}', True, (255, 255, 255))

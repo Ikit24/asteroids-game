@@ -13,7 +13,10 @@ class Player(CircleShape, pygame.sprite.Sprite):
              original = cls.images[SPACESHIP] = pygame.image.load("images/SPACESHIP.png").convert_alpha()
              cls.images[SPACESHIP] = pygame.transform.rotate(original, PLAYER_INITIAL_ROTATION)
         
-    def __init__(self, x, y):
+    def __init__(self, x, y):        
+        self.shield_active = True
+        self.shield_timer = pygame.time.get_ticks()
+        self.SHIELD_DURATION = 5000
         CircleShape.__init__(self, x, y, PLAYER_RADIUS)
         pygame.sprite.Sprite.__init__(self)
         self.rotation = 0
@@ -37,6 +40,10 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(self.original_image, -self.rotation)
         self.rect = self.image.get_rect(center=self.rect.center)
         screen.blit(self.image, self.rect)
+        
+        if self.shield_active:
+            shield_radius = self.radius * 1.4
+            pygame.draw.circle(screen, (64, 128, 255), self.position, shield_radius, 2)
 
     def get_local_triangle(self):
         center = pygame.Vector2(self.image.get_width() / 2, self.image.get_height() / 2)
@@ -52,6 +59,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.rotation += PLAYER_TURN_SPEED * dt
 
     def update(self, dt):
+        self.update_shield()
         if self.timer > 0:
             self.timer -= dt
             
@@ -72,6 +80,16 @@ class Player(CircleShape, pygame.sprite.Sprite):
             self.shoot()
         
         self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
+
+    def activate_shield(self):
+        self.shield_active = True
+        self.shield_timer = pygame.time.get_ticks()
+    
+    def update_shield(self):
+        if self.shield_active:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.shield_timer > self.SHIELD_DURATION:
+                self.shield_active = False
 
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -112,8 +130,15 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
     def collisions(self, other):
         if hasattr(other, 'radius'):
-            vertices = self.get_world_vertices()
-            
+            if self.shield_active:
+                shield_radius = self.radius * 1.4
+                distance = pygame.math.Vector2(other.position).distance_to(self.position)
+                if distance <= shield_radius + other.radius:
+                    print(f"Shield hit! Distance: {distance}, Shield+Asteroid Radius: {shield_radius + other.radius}")
+                    self.shield_active = False
+                    return False
+                
+            vertices = self.get_world_vertices()            
             circle_center = pygame.math.Vector2(other.position.x, other.position.y)
             
             for vertex in vertices:
