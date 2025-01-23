@@ -15,6 +15,8 @@ from shieldpowerup import Shield_Power_up
 
 # Add later:
 
+    # Add visuals for shield pop
+    # Add invulnerability after shield pop
     # Add acceleration to the player movement
     # Create different weapon types
     # Add a shield power-up
@@ -70,7 +72,7 @@ def main():
     asteroid_field = AsteroidField()
 
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-    player.shield_active = True
+    player.activate_shield()
     player.shield_timer = pygame.time.get_ticks()
 
     
@@ -86,7 +88,7 @@ def main():
 
     def respawn_player():
         new_player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
-        new_player.shield_active = True
+        new_player.activate_shield()
         new_player.shield_timer = pygame.time.get_ticks()
         all_sprites.add(new_player)
         updatable.add(new_player)
@@ -149,7 +151,8 @@ def main():
 
         for powerup in shield_powerups:
             if powerup.collisions(player):
-                player.shield_active = True
+                player.activate_shield()
+                print("Shield power-up collected!")
                 player.shield_timer = pygame.time.get_ticks()
                 powerup.kill()
 

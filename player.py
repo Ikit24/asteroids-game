@@ -14,9 +14,13 @@ class Player(CircleShape, pygame.sprite.Sprite):
              cls.images[SPACESHIP] = pygame.transform.rotate(original, PLAYER_INITIAL_ROTATION)
         
     def __init__(self, x, y):        
-        self.shield_active = True
-        self.shield_timer = pygame.time.get_ticks()
+        self.shield_active = False
+        self.shield_timer = 0
         self.SHIELD_DURATION = 5000
+        self.invulnerable = False
+        self.invulnerability_timer = 0
+        self.INVULNERABILITY_DURATION = 4000
+        self.should_draw = False
         CircleShape.__init__(self, x, y, PLAYER_RADIUS)
         pygame.sprite.Sprite.__init__(self)
         self.rotation = 0
@@ -38,9 +42,17 @@ class Player(CircleShape, pygame.sprite.Sprite):
     def draw(self, screen):      
         self.rect.center = (int(self.position.x), int(self.position.y))
         self.image = pygame.transform.rotate(self.original_image, -self.rotation)
+
+        if self.invulnerable and self.should_draw:
+            colored_image = self.image.copy()
+            overlay = pygame.Surface(colored_image.get_size(), pygame.SRCALPHA)
+            overlay.fill((255, 0, 0, 128))
+            colored_image.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            self.image = colored_image
+
         self.rect = self.image.get_rect(center=self.rect.center)
-        screen.blit(self.image, self.rect)
-        
+        screen.blit(self.image, self.rect) 
+
         if self.shield_active:
             shield_radius = self.radius * 1.4
             pygame.draw.circle(screen, (64, 128, 255), self.position, shield_radius, 2)
@@ -82,14 +94,26 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
 
     def activate_shield(self):
-        self.shield_active = True
-        self.shield_timer = pygame.time.get_ticks()
+        self.shield_active = True        
+        self.shield_timer = pygame.time.get_ticks() 
+        self.invulnerable = False
     
     def update_shield(self):
+        current_time = pygame.time.get_ticks()
+        print(f"Current time: {current_time}, Shield timer: {self.shield_timer}")
         if self.shield_active:
-            current_time = pygame.time.get_ticks()
             if current_time - self.shield_timer > self.SHIELD_DURATION:
+                print(f"Shield duration expired at {current_time}, activating invulnerability")
                 self.shield_active = False
+                self.invulnerable = True
+                self.invulnerability_timer = current_time
+
+        if self.invulnerable:
+            if current_time - self.invulnerability_timer > self.INVULNERABILITY_DURATION:
+                print(f"Invulnerability expired at {current_time}")
+                self.invulnerable= False
+            else:
+                self.should_draw = (current_time // 100) % 2 == 0
 
     def move(self, dt):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
@@ -129,40 +153,46 @@ class Player(CircleShape, pygame.sprite.Sprite):
         return not (has_neg and has_pos)
 
     def collisions(self, other):
-        if hasattr(other, 'radius'):
-            if self.shield_active:
-                shield_radius = self.radius * 1.4
-                distance = pygame.math.Vector2(other.position).distance_to(self.position)
-                if distance <= shield_radius + other.radius:
-                    print(f"Shield hit! Distance: {distance}, Shield+Asteroid Radius: {shield_radius + other.radius}")
-                    self.shield_active = False
-                    return False
-                
-            vertices = self.get_world_vertices()            
-            circle_center = pygame.math.Vector2(other.position.x, other.position.y)
+        print(f"Collision detected! Shield: {self.shield_active}, Invulnerable: {self.invulnerable}")
+        if self.invulnerable:
+            print("Invulnerability protecting from collision")
+            return False
+
+        if self.shield_active:
+            shield_radius = self.radius * 1.4
+            distance = pygame.math.Vector2(other.position).distance_to(self.position)
+            if distance <= shield_radius + other.radius:
+                print("Shield hit! Activating invulnerability")
+                self.shield_active = False
+                self.invulnerable = True
+                self.invulnerability_timer = pygame.time.get_ticks()
+                return False
             
-            for vertex in vertices:
-                vertex_vec = pygame.math.Vector2(vertex)
-                if vertex_vec.distance_to(circle_center) <= other.radius:
-                    return True
-                        
-            if self.point_in_triangle((circle_center.x, circle_center.y), vertices):
+        vertices = self.get_world_vertices()            
+        circle_center = pygame.math.Vector2(other.position.x, other.position.y)
+            
+        for vertex in vertices:
+            vertex_vec = pygame.math.Vector2(vertex)
+            if vertex_vec.distance_to(circle_center) <= other.radius:
                 return True
+                        
+        if self.point_in_triangle((circle_center.x, circle_center.y), vertices):
+            return True
             
-            for i in range(3):
-                p1 = pygame.math.Vector2(vertices[i])
-                p2 = pygame.math.Vector2(vertices[(i + 1) % 3])
+        for i in range(3):
+            p1 = pygame.math.Vector2(vertices[i])
+            p2 = pygame.math.Vector2(vertices[(i + 1) % 3])
                 
-                # Find nearest point on line segment to circle center
-                line_vec = p2 - p1
-                line_length = line_vec.length()
-                if line_length == 0:
-                    continue
+            # Find nearest point on line segment to circle center
+            line_vec = p2 - p1
+            line_length = line_vec.length()
+            if line_length == 0:
+                continue
                     
-                t = max(0, min(1, (circle_center - p1).dot(line_vec) / line_vec.dot(line_vec)))
-                nearest = p1 + t * line_vec
+            t = max(0, min(1, (circle_center - p1).dot(line_vec) / line_vec.dot(line_vec)))
+            nearest = p1 + t * line_vec
                 
-                if nearest.distance_to(circle_center) <= other.radius:
-                    return True
+            if nearest.distance_to(circle_center) <= other.radius:
+                return True
                     
         return False
