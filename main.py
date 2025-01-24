@@ -16,8 +16,6 @@ from shieldpowerup import Shield_Power_up
 # Add later:
 
     # Add visuals for shield pop
-    # Add invulnerability after shield pop
-    # Add acceleration to the player movement
     # Create different weapon types
     # Add a shield power-up
     # Add a speed power-up
@@ -56,7 +54,7 @@ def main():
     except pygame.error as e:
         print(f"Couldn't load background image: {e}")
         image = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        image.fill((0, 0, 0))  # Black color
+        image.fill((0, 0, 0))
 
     updatable = pygame.sprite.Group()
     drawable = pygame.sprite.Group()
@@ -65,7 +63,7 @@ def main():
 
     shield_powerups = pygame.sprite.Group()
     Shield_Power_up.containers = shield_powerups
-
+    
     Shot.containers = (shots, updatable, drawable)
     Asteroid.containers = (asteroids, updatable, drawable)
     AsteroidField.containers = (updatable,)
@@ -106,7 +104,7 @@ def main():
         for asteroid in asteroids:
             if isinstance(asteroid, Asteroid) and asteroid.collisions(player):
                 if player.shield_active:
-                    player.shield_active = False
+                    player.shield_active = True
                 else:
                     lives -= 1
                     if lives > 0:
@@ -138,6 +136,7 @@ def main():
                     shot.position.y < 0 or shot.position.y > SCREEN_HEIGHT):
                     shot.kill()
                     multiplier = decrease_multiplier(multiplier)
+
         if pygame.time.get_ticks() % 30000 < 50:
             new_powerup = spawn_shield_powerup()
             shield_powerups.add(new_powerup)
@@ -152,7 +151,6 @@ def main():
         for powerup in shield_powerups:
             if powerup.collisions(player):
                 player.activate_shield()
-                print("Shield power-up collected!")
                 player.shield_timer = pygame.time.get_ticks()
                 powerup.kill()
 

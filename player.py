@@ -17,10 +17,15 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.shield_active = False
         self.shield_timer = 0
         self.SHIELD_DURATION = 5000
-        self.invulnerable = False
-        self.invulnerability_timer = 0
-        self.INVULNERABILITY_DURATION = 4000
         self.should_draw = False
+        self.boost_active = False
+        self.boost_timer = 0
+        self.boost_cooldown = 0
+        self.boost_icon = pygame.image.load("images/boost.png").convert_alpha()
+        self.boost_icon = pygame.transform.scale(self.boost_icon, (40, 40))
+        self.boost_icon_rect = self.boost_icon.get_rect()
+        self.boost_icon_rect.topleft = (1200, 40)
+
         CircleShape.__init__(self, x, y, PLAYER_RADIUS)
         pygame.sprite.Sprite.__init__(self)
         self.rotation = 0
@@ -43,19 +48,34 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.rect.center = (int(self.position.x), int(self.position.y))
         self.image = pygame.transform.rotate(self.original_image, -self.rotation)
 
-        if self.invulnerable and self.should_draw:
-            colored_image = self.image.copy()
-            overlay = pygame.Surface(colored_image.get_size(), pygame.SRCALPHA)
-            overlay.fill((255, 0, 0, 128))
-            colored_image.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-            self.image = colored_image
-
         self.rect = self.image.get_rect(center=self.rect.center)
         screen.blit(self.image, self.rect) 
 
         if self.shield_active:
             shield_radius = self.radius * 1.4
             pygame.draw.circle(screen, (64, 128, 255), self.position, shield_radius, 2)
+        
+        screen.blit(self.boost_icon, self.boost_icon_rect)
+        if self.boost_active:
+            progress = self.boost_timer / 10
+            height = int(self.boost_icon_rect.height * progress)
+            cooldown_rect = pygame.Rect(
+                int(self.boost_icon_rect.x),
+                int(self.boost_icon_rect.bottom - height),
+                int(self.boost_icon_rect.width),
+                height
+            )
+            pygame.draw.rect(screen, (128, 128, 128), cooldown_rect)
+        elif self.boost_cooldown > 0:
+            progress = self.boost_cooldown / 10
+            height = int(self.boost_icon_rect.height * progress)
+            cooldown_rect = pygame.Rect(
+                int(self.boost_icon_rect.x),
+                int(self.boost_icon_rect.bottom - height),
+                int(self.boost_icon_rect.width),
+                height
+            )
+            pygame.draw.rect(screen, (64, 64, 64), cooldown_rect)
 
     def get_local_triangle(self):
         center = pygame.Vector2(self.image.get_width() / 2, self.image.get_height() / 2)
@@ -90,34 +110,35 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
         if keys[pygame.K_SPACE]:
             self.shoot()
+
+        if keys[pygame.K_LSHIFT]:
+            self.boost()
         
+        if self.boost_active:
+            self.boost_timer += dt
+            if self.boost_timer >= 10:
+                self.boost_active = False
+                self.boost_timer = 0
+                self.boost_cooldown = 10
+        elif self.boost_cooldown > 0:
+            self.boost_cooldown -= dt
+
         self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
 
     def activate_shield(self):
         self.shield_active = True        
-        self.shield_timer = pygame.time.get_ticks() 
-        self.invulnerable = False
+        self.shield_timer = pygame.time.get_ticks()
     
     def update_shield(self):
         current_time = pygame.time.get_ticks()
-        print(f"Current time: {current_time}, Shield timer: {self.shield_timer}")
         if self.shield_active:
             if current_time - self.shield_timer > self.SHIELD_DURATION:
-                print(f"Shield duration expired at {current_time}, activating invulnerability")
                 self.shield_active = False
-                self.invulnerable = True
-                self.invulnerability_timer = current_time
 
-        if self.invulnerable:
-            if current_time - self.invulnerability_timer > self.INVULNERABILITY_DURATION:
-                print(f"Invulnerability expired at {current_time}")
-                self.invulnerable= False
-            else:
-                self.should_draw = (current_time // 100) % 2 == 0
-
-    def move(self, dt):
+    def move(self, dt):                
         forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        self.position += forward * PLAYER_SPEED * dt
+        speed = PLAYER_SPEED *2 if self.boost_active else PLAYER_SPEED
+        self.position += forward * speed * dt
         self.rect.center = self.position
 
     def shoot(self):
@@ -127,8 +148,12 @@ class Player(CircleShape, pygame.sprite.Sprite):
             Shot(self.position.x, self.position.y, forward)
             self.timer = PLAYER_SHOOT_COOLDOWN
 
+    def boost(self):
+        if not self.boost_active and self.boost_cooldown <= 0:
+            self.boost_active = True
+            self.boost_timer = 0
+
     def get_world_vertices(self):
-        # Convert local triangle points to world coordinates
         local_points = self.get_local_triangle()
         world_points = []
         for point in local_points:
@@ -153,19 +178,12 @@ class Player(CircleShape, pygame.sprite.Sprite):
         return not (has_neg and has_pos)
 
     def collisions(self, other):
-        print(f"Collision detected! Shield: {self.shield_active}, Invulnerable: {self.invulnerable}")
-        if self.invulnerable:
-            print("Invulnerability protecting from collision")
-            return False
 
         if self.shield_active:
             shield_radius = self.radius * 1.4
             distance = pygame.math.Vector2(other.position).distance_to(self.position)
             if distance <= shield_radius + other.radius:
-                print("Shield hit! Activating invulnerability")
                 self.shield_active = False
-                self.invulnerable = True
-                self.invulnerability_timer = pygame.time.get_ticks()
                 return False
             
         vertices = self.get_world_vertices()            
