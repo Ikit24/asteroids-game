@@ -25,6 +25,10 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.boost_icon = pygame.transform.scale(self.boost_icon, (40, 40))
         self.boost_icon_rect = self.boost_icon.get_rect()
         self.boost_icon_rect.topleft = (1200, 40)
+        self.shield_image = pygame.image.load("images/shield.png").convert_alpha()
+        self.shield_image = pygame.transform.scale(self.shield_image, 
+                                             (PLAYER_RADIUS * 3, PLAYER_RADIUS * 3))        
+        
 
         CircleShape.__init__(self, x, y, PLAYER_RADIUS)
         pygame.sprite.Sprite.__init__(self)
@@ -52,8 +56,9 @@ class Player(CircleShape, pygame.sprite.Sprite):
         screen.blit(self.image, self.rect) 
 
         if self.shield_active:
-            shield_radius = self.radius * 1.4
-            pygame.draw.circle(screen, (64, 128, 255), self.position, shield_radius, 2)
+            shield_pos = (self.position[0] - self.shield_image.get_width()//2,
+                 self.position[1] - self.shield_image.get_height()//2)
+            screen.blit(self.shield_image, shield_pos)
         
         screen.blit(self.boost_icon, self.boost_icon_rect)
         if self.boost_active:
@@ -91,6 +96,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.rotation += PLAYER_TURN_SPEED * dt
 
     def update(self, dt):
+        self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
         self.update_shield()
         if self.timer > 0:
             self.timer -= dt

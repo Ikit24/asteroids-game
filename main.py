@@ -17,8 +17,6 @@ from shieldpowerup import Shield_Power_up
 
     # Add visuals for shield pop
     # Create different weapon types
-    # Add a shield power-up
-    # Add a speed power-up
     # Add bombs that can be dropped
 
 def spawn_shield_powerup():
