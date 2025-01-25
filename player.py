@@ -17,6 +17,11 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.shield_active = False
         self.shield_timer = 0
         self.SHIELD_DURATION = 5000
+        self.shield_state = "idle"
+        self.shield_alpha = 255
+        self.shield_image = pygame.image.load("images/shield.png").convert_alpha()
+        self.shield_image = pygame.transform.scale(self.shield_image, 
+                                         (PLAYER_RADIUS * 3, PLAYER_RADIUS * 3))
         self.should_draw = False
         self.boost_active = False
         self.boost_timer = 0
@@ -59,6 +64,11 @@ class Player(CircleShape, pygame.sprite.Sprite):
             shield_pos = (self.position[0] - self.shield_image.get_width()//2,
                  self.position[1] - self.shield_image.get_height()//2)
             screen.blit(self.shield_image, shield_pos)
+            shield_surface = self.shield_image.copy()
+            shield_surface.set_alpha(self.shield_alpha)
+            shield_pos = (self.position[0] - self.shield_image.get_width()//2,
+                        self.position[1] - self.shield_image.get_height()//2)
+            screen.blit(shield_surface, shield_pos)
         
         screen.blit(self.boost_icon, self.boost_icon_rect)
         if self.boost_active:
@@ -134,12 +144,25 @@ class Player(CircleShape, pygame.sprite.Sprite):
     def activate_shield(self):
         self.shield_active = True        
         self.shield_timer = pygame.time.get_ticks()
+        self.shield_state = "active"
+        self.shield_alpha = 255
     
+    def break_shield(self):
+        self.shield_state = "popping"
+
     def update_shield(self):
         current_time = pygame.time.get_ticks()
-        if self.shield_active:
-            if current_time - self.shield_timer > self.SHIELD_DURATION:
+        
+        if self.shield_state == "active":
+            if current_time - self.shield_timer >= self.SHIELD_DURATION:
+                self.shield_state = "popping"
+        
+        elif self.shield_state == "popping":
+            self.shield_alpha -= 5  # Adjust fade speed
+            if self.shield_alpha <= 0:
+                self.shield_state = "idle"
                 self.shield_active = False
+                self.shield_alpha = 255 
 
     def move(self, dt):                
         forward = pygame.Vector2(0, 1).rotate(self.rotation)

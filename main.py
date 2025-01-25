@@ -15,7 +15,6 @@ from shieldpowerup import Shield_Power_up
 
 # Add later:
 
-    # Add visuals for shield pop
     # Create different weapon types
     # Add bombs that can be dropped
 
@@ -97,6 +96,7 @@ def main():
                 return
             
         updatable.update(dt)
+        player.update_shield()
         hit_occured = False
 
         for asteroid in asteroids:
