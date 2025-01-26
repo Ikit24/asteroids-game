@@ -1,7 +1,9 @@
 import pygame
+import math
+import time
 from circleshape import CircleShape
 from constants import *
-from asteroid import Shot
+from asteroid import *
 from utils import wrap_position
 
 class Player(CircleShape, pygame.sprite.Sprite):
@@ -13,7 +15,15 @@ class Player(CircleShape, pygame.sprite.Sprite):
              original = cls.images[SPACESHIP] = pygame.image.load("images/SPACESHIP.png").convert_alpha()
              cls.images[SPACESHIP] = pygame.transform.rotate(original, PLAYER_INITIAL_ROTATION)
         
-    def __init__(self, x, y):        
+    def __init__(self, x, y, shots):
+        CircleShape.__init__(self, x, y, PLAYER_RADIUS)
+        pygame.sprite.Sprite.__init__(self)
+        
+        # Shots setup
+        self.shots = shots
+        self.spread_shots = pygame.sprite.Group()
+        
+        # Shield setup
         self.shield_active = False
         self.shield_timer = 0
         self.SHIELD_DURATION = 5000
@@ -21,7 +31,9 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.shield_alpha = 255
         self.shield_image = pygame.image.load("images/shield.png").convert_alpha()
         self.shield_image = pygame.transform.scale(self.shield_image, 
-                                         (PLAYER_RADIUS * 3, PLAYER_RADIUS * 3))
+                                        (PLAYER_RADIUS * 3, PLAYER_RADIUS * 3))
+        
+        # Boost setup
         self.should_draw = False
         self.boost_active = False
         self.boost_timer = 0
@@ -30,19 +42,22 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.boost_icon = pygame.transform.scale(self.boost_icon, (40, 40))
         self.boost_icon_rect = self.boost_icon.get_rect()
         self.boost_icon_rect.topleft = (1200, 40)
-        self.shield_image = pygame.image.load("images/shield.png").convert_alpha()
-        self.shield_image = pygame.transform.scale(self.shield_image, 
-                                             (PLAYER_RADIUS * 3, PLAYER_RADIUS * 3))        
         
-
-        CircleShape.__init__(self, x, y, PLAYER_RADIUS)
-        pygame.sprite.Sprite.__init__(self)
+        # Weapon setup
+        self.current_weapon = "normal"
+        self.weapon_cooldown = 0
+        self.last_shot_time = 0
+        self.shot_cooldown = 0.25
+        self.last_spread_shot_time = pygame.time.get_ticks()  # Keep this one
+        self.spread_shot_cooldown = 2.0  # 2 second cooldown
+        
+        # Image and rotation setup
         self.rotation = 0
         size = int(PLAYER_RADIUS * 3)
         self.image = pygame.Surface((size, size), pygame.SRCALPHA)
         self.rect = self.image.get_rect()
         self.rect.center = self.position
-
+        
         self.load_images()
         
         scaled_size = (PLAYER_RADIUS * 2, PLAYER_RADIUS * 2)
@@ -56,6 +71,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
     def draw(self, screen):      
         self.rect.center = (int(self.position.x), int(self.position.y))
         self.image = pygame.transform.rotate(self.original_image, -self.rotation)
+        self.spread_shots.draw(screen)
 
         self.rect = self.image.get_rect(center=self.rect.center)
         screen.blit(self.image, self.rect) 
@@ -107,6 +123,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
     def update(self, dt):
         self.position.x, self.position.y = wrap_position(self.position.x, self.position.y)
+        self.spread_shots.update(dt)
         self.update_shield()
         if self.timer > 0:
             self.timer -= dt
@@ -177,6 +194,44 @@ class Player(CircleShape, pygame.sprite.Sprite):
             Shot(self.position.x, self.position.y, forward)
             self.timer = PLAYER_SHOOT_COOLDOWN
 
+    def can_shoot(self):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot_time >= self.shot_cooldown:
+            self.last_shot_time = current_time
+            return True
+        return False
+    
+    def can_spread_shot(self):
+        current_time = pygame.time.get_ticks()
+        time_since_last = (current_time - self.last_spread_shot_time) / 1000
+        print(f"Time since last spread shot: {time_since_last:.2f}s")
+        return time_since_last >= self.spread_shot_cooldown
+
+    def spread_shot(self):
+        if self.can_spread_shot():
+            num_pellets = 5
+            total_spread = 45
+            angle_between = total_spread / (num_pellets - 1)
+            start_angle = -total_spread / 2
+            base_speed = 300
+
+            firing_angle = -self.rotation + 90
+            normalized_rotation = self.rotation % 360
+            print(f"Player rotation: {normalized_rotation}")
+            print(f"Calculated angles: start={start_angle}, between={angle_between}")
+
+            for i in range(num_pellets):
+                current_angle = firing_angle + start_angle + (i * angle_between)
+                angle_rad = math.radians(current_angle)
+                new_velocity = pygame.math.Vector2(
+                    base_speed * math.cos(angle_rad),
+                    base_speed * math.sin(angle_rad)
+                )
+                new_shot = SpreadShot(self.position.x, self.position.y, new_velocity, current_angle)
+                self.spread_shots.add(new_shot)
+
+            self.last_spread_shot_time = pygame.time.get_ticks()
+          
     def boost(self):
         if not self.boost_active and self.boost_cooldown <= 0:
             self.boost_active = True

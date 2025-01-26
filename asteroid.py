@@ -1,5 +1,6 @@
 import pygame
 import random
+import time
 from circleshape import CircleShape
 from constants import *
 from utils import wrap_position
@@ -84,6 +85,8 @@ class Shot(CircleShape, pygame.sprite.Sprite):
         CircleShape.__init__(self, x, y, 5)
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.velocity = velocity
+        self.lifetime = 2.0
+        self.birth_time = time.time()
 
     def draw(self, screen):
         pygame.draw.circle(
@@ -92,3 +95,32 @@ class Shot(CircleShape, pygame.sprite.Sprite):
 
     def update(self, dt):
         self.position += self.velocity * dt
+        if time.time() - self.birth_time > self.lifetime:
+            self.kill()
+
+class SpreadShot(pygame.sprite.Sprite):
+    def __init__(self, x, y, velocity, angle):
+        super().__init__()
+        # Create the shot's image and rect
+        self.image = pygame.Surface((5, 5))  # Or whatever size you want
+        self.image.fill((255, 255, 0))  # Yellow color, or whatever color you want
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.velocity = velocity
+        self.position = pygame.math.Vector2(x, y)
+
+    def update(self, dt):
+        self.position += self.velocity * dt
+        self.rect.center = self.position
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
+    def collisions(self, other):
+        return self.rect.colliderect(other.rect)
+
+class HomingShot(Shot):
+    def __init__(self, x, y, velocity, target=None):
+        super().__init__(x, y, velocity)
+        self.target = target
+        self.turn_rate = 0.1
