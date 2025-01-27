@@ -13,6 +13,7 @@ from asteroidfield import AsteroidField
 from shieldpowerup import Shield_Power_up
 
 # Add later:
+    # Add multishot skill icon
     # Add bombs that can be dropped
 
 def spawn_shield_powerup():
@@ -107,13 +108,9 @@ class Game:
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    if event.button == 3:  # Right click
-                        print("Right click detected")
+                    if event.button == 3:
                         if self.player.can_spread_shot():
-                            print("Spreading!")
                             self.player.spread_shot()
-                        else:
-                            print("Spread shot not ready")
                 
             self.updatable.update(self.dt)
             self.player.update_shield()

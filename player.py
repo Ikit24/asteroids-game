@@ -50,6 +50,14 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.shot_cooldown = 0.25
         self.last_spread_shot_time = pygame.time.get_ticks()  # Keep this one
         self.spread_shot_cooldown = 2.0  # 2 second cooldown
+
+        # Spread_shot setup
+        self.should_draw = False
+        self.spread_shot_cooldown = 0
+        self.spread_shot_icon = pygame.image.load("images/spread_shot.png").convert_alpha()
+        self.spread_shot_icon = pygame.transform.scale(self.spread_shot_icon, (40, 40))
+        self.spread_shot_icon_rect = self.spread_shot_icon.get_rect()
+        self.spread_shot_icon_rect.topleft = (1100, 30)
         
         # Image and rotation setup
         self.rotation = 0
@@ -87,6 +95,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
             screen.blit(shield_surface, shield_pos)
         
         screen.blit(self.boost_icon, self.boost_icon_rect)
+
         if self.boost_active:
             progress = self.boost_timer / 10
             height = int(self.boost_icon_rect.height * progress)
@@ -204,7 +213,6 @@ class Player(CircleShape, pygame.sprite.Sprite):
     def can_spread_shot(self):
         current_time = pygame.time.get_ticks()
         time_since_last = (current_time - self.last_spread_shot_time) / 1000
-        print(f"Time since last spread shot: {time_since_last:.2f}s")
         return time_since_last >= self.spread_shot_cooldown
 
     def spread_shot(self):
@@ -216,9 +224,6 @@ class Player(CircleShape, pygame.sprite.Sprite):
             base_speed = 300
 
             firing_angle = -self.rotation + 90
-            normalized_rotation = self.rotation % 360
-            print(f"Player rotation: {normalized_rotation}")
-            print(f"Calculated angles: start={start_angle}, between={angle_between}")
 
             for i in range(num_pellets):
                 current_angle = firing_angle + start_angle + (i * angle_between)
@@ -262,7 +267,6 @@ class Player(CircleShape, pygame.sprite.Sprite):
         return not (has_neg and has_pos)
 
     def collisions(self, other):
-
         if self.shield_active:
             shield_radius = self.radius * 1.4
             distance = pygame.math.Vector2(other.position).distance_to(self.position)
