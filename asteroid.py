@@ -99,19 +99,26 @@ class Shot(CircleShape, pygame.sprite.Sprite):
             self.kill()
 
 class SpreadShot(pygame.sprite.Sprite):
-    def __init__(self, x, y, velocity, angle):
+    def __init__(self, x, y, velocity, angle, lifetime=1000):
         super().__init__()
         # Create the shot's image and rect
-        self.image = pygame.Surface((5, 5))  # Or whatever size you want
-        self.image.fill((255, 255, 0))  # Yellow color, or whatever color you want
+        self.image = pygame.Surface((5, 5))
+        self.image.fill((255, 255, 0))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
         self.velocity = velocity
         self.position = pygame.math.Vector2(x, y)
 
+        self.lifetime = lifetime
+        self.start_time = pygame.time.get_ticks()
+
     def update(self, dt):
         self.position += self.velocity * dt
         self.rect.center = self.position
+
+        current_time = pygame.time.get_ticks()
+        if current_time - self.start_time > self.lifetime:
+            self.kill()
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)

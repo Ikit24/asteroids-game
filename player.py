@@ -49,15 +49,14 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.last_shot_time = 0
         self.shot_cooldown = 0.25
         self.last_spread_shot_time = pygame.time.get_ticks()  # Keep this one
-        self.spread_shot_cooldown = 2.0  # 2 second cooldown
+        self.spread_shot_cooldown = 2.0
 
         # Spread_shot setup
         self.should_draw = False
-        self.spread_shot_cooldown = 0
         self.spread_shot_icon = pygame.image.load("images/spread_shot.png").convert_alpha()
         self.spread_shot_icon = pygame.transform.scale(self.spread_shot_icon, (40, 40))
         self.spread_shot_icon_rect = self.spread_shot_icon.get_rect()
-        self.spread_shot_icon_rect.topleft = (1100, 30)
+        self.spread_shot_icon_rect.topleft = (1150, 40)
         
         # Image and rotation setup
         self.rotation = 0
@@ -77,32 +76,31 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.timer = 0
 
     def draw(self, screen):      
+        # Draw player
         self.rect.center = (int(self.position.x), int(self.position.y))
         self.image = pygame.transform.rotate(self.original_image, -self.rotation)
         self.spread_shots.draw(screen)
-
         self.rect = self.image.get_rect(center=self.rect.center)
-        screen.blit(self.image, self.rect) 
+        screen.blit(self.image, self.rect)
 
+        # Draw shield if active
         if self.shield_active:
-            shield_pos = (self.position[0] - self.shield_image.get_width()//2,
-                 self.position[1] - self.shield_image.get_height()//2)
+            shield_pos = (self.position[0] - self.shield_image.get_width() // 2,
+                          self.position[1] - self.shield_image.get_height() // 2)
             screen.blit(self.shield_image, shield_pos)
             shield_surface = self.shield_image.copy()
             shield_surface.set_alpha(self.shield_alpha)
-            shield_pos = (self.position[0] - self.shield_image.get_width()//2,
-                        self.position[1] - self.shield_image.get_height()//2)
             screen.blit(shield_surface, shield_pos)
         
+        # Draw boost icon and its cooldown
         screen.blit(self.boost_icon, self.boost_icon_rect)
-
         if self.boost_active:
             progress = self.boost_timer / 10
             height = int(self.boost_icon_rect.height * progress)
             cooldown_rect = pygame.Rect(
-                int(self.boost_icon_rect.x),
-                int(self.boost_icon_rect.bottom - height),
-                int(self.boost_icon_rect.width),
+                self.boost_icon_rect.x,
+                self.boost_icon_rect.bottom - height,
+                self.boost_icon_rect.width,
                 height
             )
             pygame.draw.rect(screen, (128, 128, 128), cooldown_rect)
@@ -110,12 +108,27 @@ class Player(CircleShape, pygame.sprite.Sprite):
             progress = self.boost_cooldown / 10
             height = int(self.boost_icon_rect.height * progress)
             cooldown_rect = pygame.Rect(
-                int(self.boost_icon_rect.x),
-                int(self.boost_icon_rect.bottom - height),
-                int(self.boost_icon_rect.width),
+                self.boost_icon_rect.x,
+                self.boost_icon_rect.bottom - height,
+                self.boost_icon_rect.width,
                 height
             )
             pygame.draw.rect(screen, (64, 64, 64), cooldown_rect)
+        
+        # Draw spread shot icon
+        screen.blit(self.spread_shot_icon, self.spread_shot_icon_rect)
+
+        # Draw spread shot cooldown bar
+        cooldown_progress = self.get_spread_shot_cooldown_progress()
+        if cooldown_progress < 1:
+            cooldown_height = int(self.spread_shot_icon_rect.height * (1 - cooldown_progress))
+            cooldown_rect = pygame.Rect(
+                self.spread_shot_icon_rect.x,
+                self.spread_shot_icon_rect.bottom - cooldown_height,
+                self.spread_shot_icon_rect.width,
+                cooldown_height
+            )
+            pygame.draw.rect(screen, (128, 0, 0), cooldown_rect)
 
     def get_local_triangle(self):
         center = pygame.Vector2(self.image.get_width() / 2, self.image.get_height() / 2)
@@ -236,7 +249,12 @@ class Player(CircleShape, pygame.sprite.Sprite):
                 self.spread_shots.add(new_shot)
 
             self.last_spread_shot_time = pygame.time.get_ticks()
-          
+
+    def get_spread_shot_cooldown_progress(self):
+        current_time = pygame.time.get_ticks()
+        time_since_last = (current_time - self.last_spread_shot_time) / 1000
+        return min(time_since_last / self.spread_shot_cooldown, 1)
+
     def boost(self):
         if not self.boost_active and self.boost_cooldown <= 0:
             self.boost_active = True
