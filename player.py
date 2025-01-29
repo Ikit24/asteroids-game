@@ -50,6 +50,8 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.shot_cooldown = 0.25
         self.last_spread_shot_time = pygame.time.get_ticks()  # Keep this one
         self.spread_shot_cooldown = 2.0
+        self.last_torpedo_shot_time = pygame.time.get_ticks()
+        self.torpedo_shot_cooldown = 5.0
 
         # Spread_shot setup
         self.should_draw = False
@@ -57,6 +59,13 @@ class Player(CircleShape, pygame.sprite.Sprite):
         self.spread_shot_icon = pygame.transform.scale(self.spread_shot_icon, (40, 40))
         self.spread_shot_icon_rect = self.spread_shot_icon.get_rect()
         self.spread_shot_icon_rect.topleft = (1150, 40)
+
+        #Torpedo setup
+        self.should_draw =  False
+        self.torpedo_icon = pygame.image.load("images/torpedo.png").convert_alpha()
+        self.torpedo_icon = pygame.transform.scale(self.torpedo_icon, (40, 40))
+        self.torpedo_icon_poly = self.torpedo_icon.get_rect()
+        self.torpedo_icon_poly.topleft = (1100, 40)
         
         # Image and rotation setup
         self.rotation = 0
@@ -129,6 +138,21 @@ class Player(CircleShape, pygame.sprite.Sprite):
                 cooldown_height
             )
             pygame.draw.rect(screen, (128, 0, 0), cooldown_rect)
+
+        # Draw torpedo icon
+        screen.blit(self.torpedo_icon, self.torpedo_icon_poly)
+
+        # Draw torpedo icon cooldown bar
+        torpedo_progress = self.get_torpedo_cooldown_progress()
+        if torpedo_progress < 1:
+            cd_height = int(self.torpedo_icon_poly.height * (1 - torpedo_progress))
+            cd_rect = pygame.Rect(
+                self.torpedo_icon_poly.x,
+                self.torpedo_icon_poly.bottom - cd_height,
+                self.torpedo_icon_poly.width,
+                cd_height
+            )
+            pygame.draw.polygon(screen, (128, 0, 0), cd_rect)
 
     def get_local_triangle(self):
         center = pygame.Vector2(self.image.get_width() / 2, self.image.get_height() / 2)
@@ -227,6 +251,11 @@ class Player(CircleShape, pygame.sprite.Sprite):
         current_time = pygame.time.get_ticks()
         time_since_last = (current_time - self.last_spread_shot_time) / 1000
         return time_since_last >= self.spread_shot_cooldown
+    
+    def can_torpedo(self):
+        current_time = pygame.time.get_ticks()
+        time_since_last = (current_time - self.last_torpedo_shot_time) / 1000
+        return time_since_last >= self.torpedo_shot_cooldown
 
     def spread_shot(self):
         if self.can_spread_shot():
@@ -236,7 +265,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
             start_angle = -total_spread / 2
             base_speed = 300
 
-            firing_angle = -self.rotation + 90
+            firing_angle = self.rotation + 90
 
             for i in range(num_pellets):
                 current_angle = firing_angle + start_angle + (i * angle_between)
@@ -250,10 +279,23 @@ class Player(CircleShape, pygame.sprite.Sprite):
 
             self.last_spread_shot_time = pygame.time.get_ticks()
 
+    def torpedo_shot(self):
+        if self.can_torpedo():
+            if self.torpedo_shot_cooldown >= 0:
+                forward = pygame.Vector2(0, 1).rotate(self.rotation)
+                forward *= PLAYER_SHOOT_SPEED
+                Shot(self.position.x, self.position.y, forward)
+                self.timer = self.torpedo_shot_cooldown
+    
     def get_spread_shot_cooldown_progress(self):
         current_time = pygame.time.get_ticks()
         time_since_last = (current_time - self.last_spread_shot_time) / 1000
         return min(time_since_last / self.spread_shot_cooldown, 1)
+    
+    def get_torpedo_cooldown_progress(self):
+        current_time = pygame.time.get_ticks()
+        time_since_last = (current_time - self.last_torpedo_shot_time) / 1000
+        return min(time_since_last / self.torpedo_shot_cooldown)
 
     def boost(self):
         if not self.boost_active and self.boost_cooldown <= 0:

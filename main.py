@@ -13,7 +13,6 @@ from asteroidfield import AsteroidField
 from shieldpowerup import Shield_Power_up
 
 # Add later:
-    # Add multishot skill icon
     # Add bombs that can be dropped
 
 def spawn_shield_powerup():

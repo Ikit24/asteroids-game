@@ -112,6 +112,9 @@ class SpreadShot(pygame.sprite.Sprite):
         self.lifetime = lifetime
         self.start_time = pygame.time.get_ticks()
 
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
     def update(self, dt):
         self.position += self.velocity * dt
         self.rect.center = self.position
@@ -120,14 +123,24 @@ class SpreadShot(pygame.sprite.Sprite):
         if current_time - self.start_time > self.lifetime:
             self.kill()
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect)
-
     def collisions(self, other):
         return self.rect.colliderect(other.rect)
 
-class HomingShot(Shot):
-    def __init__(self, x, y, velocity, target=None):
+class Torpedo(Shot):
+    def __init__(self, x, y, velocity):
         super().__init__(x, y, velocity)
-        self.target = target
-        self.turn_rate = 0.1
+        self.velocity = velocity
+        self.lifetime = 4.0
+        self.start_time = pygame.time.get_ticks()
+        
+    def draw(self, screen):
+        pygame.draw.polygon(
+            screen, "red", (int(self.position.x), int(self.position.y)), self.radius, 2
+        )
+
+    def update(self, dt):
+        self.position += self.velocity * dt
+        current_time = pygame.time.get_ticks()
+        if current_time - self.start_time > self.lifetime:
+            self.kill()
+        
