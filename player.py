@@ -22,6 +22,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
         # Shots setup
         self.shots = shots
         self.spread_shots = pygame.sprite.Group()
+        self.torpedo_shots = pygame.sprite.Group()
         
         # Shield setup
         self.shield_active = False
@@ -152,7 +153,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
                 self.torpedo_icon_poly.width,
                 cd_height
             )
-            pygame.draw.polygon(screen, (128, 0, 0), cd_rect)
+            pygame.draw.rect(screen, (128, 0, 0), cd_rect)
 
     def get_local_triangle(self):
         center = pygame.Vector2(self.image.get_width() / 2, self.image.get_height() / 2)
@@ -295,7 +296,7 @@ class Player(CircleShape, pygame.sprite.Sprite):
     def get_torpedo_cooldown_progress(self):
         current_time = pygame.time.get_ticks()
         time_since_last = (current_time - self.last_torpedo_shot_time) / 1000
-        return min(time_since_last / self.torpedo_shot_cooldown)
+        return min(time_since_last / self.torpedo_shot_cooldown, 1)
 
     def boost(self):
         if not self.boost_active and self.boost_cooldown <= 0:

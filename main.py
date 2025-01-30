@@ -81,18 +81,26 @@ class Game:
         self.font = pygame.font.Font(None, 36)
 
     def handle_shot_collision(self, shot, asteroid):
+        # Torpedoes might have unique behavior; avoid killing them here if needed
+        if not isinstance(shot, Torpedo):
             shot.kill()
-            explosion = Explosion(asteroid.position.x, asteroid.position.y)
-            self.explosions.add(explosion)
-            self.updatable.add(explosion)
-            self.drawable.add(explosion)
 
-            self.multiplier = increase_multiplier(self.multiplier)
-            points = SCORE_VALUES.get(asteroid.size, DEFAULT_POINTS)
-            self.score += int(points * self.multiplier)
-            self.high_score = max(self.score, self.high_score)
-            asteroid.split()
-            return True           
+        # Spawn an explosion at the asteroid's position
+        explosion = Explosion(asteroid.position.x, asteroid.position.y)
+        self.explosions.add(explosion)
+        self.updatable.add(explosion)
+        self.drawable.add(explosion)
+
+        # Update multiplier and scoring
+        self.multiplier = increase_multiplier(self.multiplier)
+        points = SCORE_VALUES.get(asteroid.size, DEFAULT_POINTS)
+        self.score += int(points * self.multiplier)
+        self.high_score = max(self.score, self.high_score)
+
+        # Handle asteroid splitting behavior
+        asteroid.split()
+        
+        return True
 
     def respawn_player(self):
         new_player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, self.shots)
@@ -110,6 +118,9 @@ class Game:
                     if event.button == 3:
                         if self.player.can_spread_shot():
                             self.player.spread_shot()
+                    elif event.button == 1:  # Left-click
+                        if self.player.can_torpedo():
+                            self.player.torpedo_shot()
                 
             self.updatable.update(self.dt)
             self.player.update_shield()
@@ -138,7 +149,7 @@ class Game:
                         shot.kill()
                         self.multiplier = decrease_multiplier(self.multiplier)
                     elif isinstance(asteroid, Asteroid) and shot.collisions(asteroid):
-                        hit_occurred = self.handle_shot_collision(shot, asteroid)  # Note the self.
+                        hit_occurred = self.handle_shot_collision(shot, asteroid)
 
                 # Check spread shots
                 for spread_shot in self.player.spread_shots:
@@ -148,6 +159,11 @@ class Game:
                         self.multiplier = decrease_multiplier(self.multiplier)
                     elif isinstance(asteroid, Asteroid) and spread_shot.collisions(asteroid):
                         hit_occurred = self.handle_shot_collision(spread_shot, asteroid)
+
+                for torpedo_shot in self.player.torpedo_shots:
+                    if (torpedo_shot.position.x < 0 or torpedo_shot.position.x > SCREEN_WIDTH or 
+                        torpedo_shot.position.y < 0 or torpedo_shot.position.y > SCREEN_HEIGHT):
+                        self.multiplier = decrease_multiplier(self.multiplier)
 
             if pygame.time.get_ticks() % 30000 < 50:
                 spawn_shield_powerup()

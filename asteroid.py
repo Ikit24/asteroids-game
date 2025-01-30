@@ -130,12 +130,13 @@ class Torpedo(Shot):
     def __init__(self, x, y, velocity):
         super().__init__(x, y, velocity)
         self.velocity = velocity
-        self.lifetime = 4.0
+        self.lifetime = 15.0
+        self.radius = 10
         self.start_time = pygame.time.get_ticks()
-        
+            
     def draw(self, screen):
-        pygame.draw.polygon(
-            screen, "red", (int(self.position.x), int(self.position.y)), self.radius, 2
+        pygame.draw.circle(
+            screen, "red", (int(self.position.x), int(self.position.y)), self.radius
         )
 
     def update(self, dt):
@@ -143,4 +144,11 @@ class Torpedo(Shot):
         current_time = pygame.time.get_ticks()
         if current_time - self.start_time > self.lifetime:
             self.kill()
+
+    def collisions(self, asteroid):
+        torpedo_pos = pygame.math.Vector2(self.position.x, self.position.y)
+        asteroid_pos = pygame.math.Vector2(asteroid.position.x, asteroid.position.y)
         
+        distance = torpedo_pos.distance_to(asteroid_pos)
+
+        return distance < (self.radius + asteroid.radius)
