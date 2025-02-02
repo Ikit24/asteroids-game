@@ -90,7 +90,7 @@ class Shot(CircleShape, pygame.sprite.Sprite):
 
     def draw(self, screen):
         pygame.draw.circle(
-            screen, "white", (int(self.position.x), int(self.position.y)), self.radius, 2
+            screen, "green", (int(self.position.x), int(self.position.y)), self.radius, 2
         )
 
     def update(self, dt):
@@ -98,19 +98,19 @@ class Shot(CircleShape, pygame.sprite.Sprite):
         if time.time() - self.birth_time > self.lifetime:
             self.kill()
 
-class SpreadShot(pygame.sprite.Sprite):
-    def __init__(self, x, y, velocity, angle, lifetime=1000):
-        super().__init__()
-        # Create the shot's image and rect
+class SpreadShot(CircleShape, pygame.sprite.Sprite):
+    def __init__(self, x, y, velocity, angle):
+        CircleShape.__init__(self, x, y, 5)
+        pygame.sprite.Sprite.__init__(self, self.containers)
         self.image = pygame.Surface((5, 5))
-        self.image.fill((255, 255, 0))
+        self.image.fill((0, 255, 255))
         self.rect = self.image.get_rect()
         self.rect.center = (x, y)
+        
         self.velocity = velocity
         self.position = pygame.math.Vector2(x, y)
-
-        self.lifetime = lifetime
         self.start_time = pygame.time.get_ticks()
+        self.lifetime = 450
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
@@ -126,29 +126,43 @@ class SpreadShot(pygame.sprite.Sprite):
     def collisions(self, other):
         return self.rect.colliderect(other.rect)
 
-class Torpedo(Shot):
-    def __init__(self, x, y, velocity):
-        super().__init__(x, y, velocity)
+class TorpedoShot(CircleShape, pygame.sprite.Sprite):
+    def __init__(self, x, y, velocity, angle):
+        CircleShape.__init__(self, x, y, 7)
+        pygame.sprite.Sprite.__init__(self, self.containers)
+
+        self.image = pygame.Surface((20, 8), pygame.SRCALPHA)
+        pygame.draw.rect(self.image, (0, 150, 255), (0, 0, 20, 8))
+        pygame.draw.rect(self.image, (100, 200, 255), (15, 0, 5, 8))
+        
+        self.image = pygame.transform.rotate(self.image, angle)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        
         self.velocity = velocity
-        self.lifetime = 15.0
-        self.radius = 10
-        self.start_time = pygame.time.get_ticks()
+        self.position = pygame.math.Vector2(x, y)
+        
+        self.trail_positions = []
+        self.max_trail_length = 10
+        
+    def update(self, dt):
+        self.trail_positions.append(self.position.copy())
+        if len(self.trail_positions) > self.max_trail_length:
+            self.trail_positions.pop(0)
+            
+        self.position += self.velocity * dt
+        self.rect.center = (int(self.position.x), int(self.position.y))
+        
+        if (self.position.x < 0 or self.position.x > SCREEN_WIDTH or 
+            self.position.y < 0 or self.position.y > SCREEN_HEIGHT):
+            self.kill()
             
     def draw(self, screen):
-        pygame.draw.circle(
-            screen, "red", (int(self.position.x), int(self.position.y)), self.radius
-        )
-
-    def update(self, dt):
-        self.position += self.velocity * dt
-        current_time = pygame.time.get_ticks()
-        if current_time - self.start_time > self.lifetime:
-            self.kill()
-
-    def collisions(self, asteroid):
-        torpedo_pos = pygame.math.Vector2(self.position.x, self.position.y)
-        asteroid_pos = pygame.math.Vector2(asteroid.position.x, asteroid.position.y)
-        
-        distance = torpedo_pos.distance_to(asteroid_pos)
-
-        return distance < (self.radius + asteroid.radius)
+        for i, pos in enumerate(self.trail_positions):
+            alpha = int(255 * (i / len(self.trail_positions)))
+            radius = int(3 * (i / len(self.trail_positions)))
+            trail_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(trail_surface, (0, 150, 255, alpha), (radius, radius), radius)
+            screen.blit(trail_surface, (pos.x - radius, pos.y - radius))
+            
+        screen.blit(self.image, self.rect)
